@@ -121,11 +121,11 @@ const miss=[!d.name&&'Name',...T[d.cat].filter(t=>t[2]&&!d.f[t[0]]).map(t=>t[1])
 await save(d);show(d.id)}}
 // ---- camp ----
 function camp(){$('#app').innerHTML=`<h1>Camp</h1>
-<div class="card"><h2>Import from Sortly</h2><p class="sub">Choose your three Excel/CSV exports. File name decides category: "mineral", "fossil", otherwise artifact ("misc").</p><input type="file" id="imp" accept=".xlsx,.xls,.csv" multiple><p id="ilog"></p></div>
+<div class="card"><h2>Import from Sortly</h2><p class="sub">Choose your three Excel/CSV exports. File name decides category: "mineral", "fossil", otherwise artifact ("misc").</p><input type="file" id="imp" accept=".xlsx,.xls,.csv" multiple><progress id="ipr" value="0" max="1" style="width:100%"></progress><p id="ilog">Waiting for a file…</p></div>
 <div class="card"><h2>Bulk tools</h2><label><input type="checkbox" id="ow" style="width:auto"> Overwrite existing Date values</label><button id="bd" style="margin:6px 0">Extract Date from tags</button>
 <label><input type="checkbox" id="rc" style="width:auto"> Replace colors (instead of merging)</label><button id="bc" style="margin:6px 0">Extract colors from tags</button><p id="blog"></p></div>
 <div class="card"><h2>Export / backup</h2><div class="row"><button class="p" id="ej">Backup JSON</button><button id="ec">Export CSV</button></div><label>Restore from backup<input type="file" id="rs" accept=".json"></label></div>`;
-$('#imp').onchange=async e=>{for(const f of e.target.files)await importFile(f)};
+$('#imp').onchange=async e=>{const log=$('#ilog');log.textContent='Reading file…';try{if(typeof XLSX==='undefined')await new Promise((ok,no)=>{const s=document.createElement('script');s.src='https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js';s.onload=ok;s.onerror=()=>no(new Error('Spreadsheet reader could not load. Check your connection and reopen the app.'));document.head.appendChild(s)});for(const f of e.target.files)await importFile(f)}catch(err){log.textContent='Import problem: '+err.message}};
 $('#bd').onclick=bulkDate;$('#bc').onclick=bulkColor;$('#ej').onclick=()=>out('leilas-journal-backup.json',JSON.stringify({templates:T,specimens:S},null,1),'application/json');
 $('#ec').onclick=csv;$('#rs').onchange=async e=>{const j=JSON.parse(await e.target.files[0].text());for(const x of j.specimens)await save(x);alert('Restored '+j.specimens.length);home()}}
 async function out(name,text,type){const f=new File([text],name,{type});if(navigator.canShare&&navigator.canShare({files:[f]})){try{return await navigator.share({files:[f]})}catch(e){if(e.name==='AbortError')return}}
@@ -145,8 +145,8 @@ $('#blog').textContent=`Colors extracted for ${n} specimens.`}
 async function importFile(f){const log=$('#ilog'),nm=f.name.toLowerCase(),cat=nm.includes('mineral')?'mineral':nm.includes('fossil')?'fossil':'artifact';
 const wb=XLSX.read(await f.arrayBuffer());const rows=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{defval:''});
 const pick=(r,...ks)=>{for(const k of Object.keys(r))if(ks.some(z=>k.toLowerCase().replace(/[^a-z]/g,'')===z))return r[k];return ''};
-const photoKeys=rows[0]?Object.keys(rows[0]).filter(k=>/photo|image|picture/i.test(k)):[];let added=0,skip=0,ph=0,i=0;
-for(const r of rows){log.textContent=`${f.name}: ${++i}/${rows.length}…`;const name=String(pick(r,'name','itemname')).trim();if(!name)continue;
+const photoKeys=rows[0]?Object.keys(rows[0]).filter(k=>/photo|image|picture/i.test(k)):[];let added=0,skip=0,ph=0,i=0;if(!rows.length){log.textContent=f.name+': no rows found.';return}
+for(const r of rows){i++;$('#ipr').max=rows.length;$('#ipr').value=i;log.textContent=`${f.name}: row ${i} of ${rows.length}…`;const name=String(pick(r,'name','itemname')).trim();if(!name)continue;
 const sid=String(pick(r,'sid')).trim();if(sid&&S.some(x=>x.sid===sid)){skip++;continue}
 const tags=String(pick(r,'tags')).split(/[,;]/).map(s=>s.trim()).filter(Boolean),folder=String(pick(r,'folder','folderpath','path')).trim();
 const x={id:uid(),added:Date.now(),name,cat,tags,notes:String(pick(r,'notes')),storage:'',folder,price:+pick(r,'price','unitprice')||'',pdate:String(pick(r,'purchasedate','date')),value:+pick(r,'value','totalvalue')||'',year:'',acquired:'',source:'',sid,photos:[],f:{},colors:[]};
