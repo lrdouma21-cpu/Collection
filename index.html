@@ -45,12 +45,12 @@ let DB,S=[],view='home',q={q:'',cat:'',sort:'name',acq:''},cur=null,seen=false;
 const idb=()=>new Promise((r,j)=>{const o=indexedDB.open('leilas-journal',1);o.onupgradeneeded=()=>o.result.createObjectStore('s',{keyPath:'id'});o.onsuccess=()=>r(o.result);o.onerror=j});
 const tx=(m,f)=>new Promise((r,j)=>{const t=DB.transaction('s',m);const x=f(t.objectStore('s'));t.oncomplete=()=>r(x.result);t.onerror=j});
 const load=async()=>{S=await tx('readonly',s=>s.getAll())};
-const save=async x=>{await tx('readwrite',s=>s.put(x));await load()};
+const save=async x=>{await tx('readwrite',s=>s.put(x));const i=S.findIndex(z=>z.id===x.id);i<0?S.push(x):S[i]=x};
 const del=async id=>{await tx('readwrite',s=>s.delete(id));await load()};
 const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,6);
 const disp=x=>x.value||x.price||'';const money=n=>n?new Intl.NumberFormat('en-US',{style:'currency',currency:'USD'}).format(n):'';
 // ---- image helper ----
-const shrink=blob=>new Promise(r=>{const i=new Image(),u=URL.createObjectURL(blob);i.onload=()=>{const k=Math.min(1,1000/Math.max(i.width,i.height)),c=document.createElement('canvas');c.width=i.width*k;c.height=i.height*k;c.getContext('2d').drawImage(i,0,0,c.width,c.height);URL.revokeObjectURL(u);r(c.toDataURL('image/jpeg',.7))};i.onerror=()=>r(null);i.src=u});
+const shrink=blob=>new Promise(r=>{const i=new Image(),u=URL.createObjectURL(blob);i.onload=()=>{const k=Math.min(1,800/Math.max(i.width,i.height)),c=document.createElement('canvas');c.width=i.width*k;c.height=i.height*k;c.getContext('2d').drawImage(i,0,0,c.width,c.height);URL.revokeObjectURL(u);r(c.toDataURL('image/jpeg',.6))};i.onerror=()=>r(null);i.src=u});
 // ---- tomb ----
 $('#tomb').onclick=function once(){if(seen)return;seen=true;$('#ts').textContent='Ancient seals breaking…';$('#aud').play().catch(()=>{});$('#tomb').classList.add('open');setTimeout(()=>$('#tomb').style.display='none',5600)};
 // ---- nav ----
@@ -121,11 +121,16 @@ const miss=[!d.name&&'Name',...T[d.cat].filter(t=>t[2]&&!d.f[t[0]]).map(t=>t[1])
 await save(d);show(d.id)}}
 // ---- camp ----
 function camp(){$('#app').innerHTML=`<h1>Camp</h1>
-<div class="card"><h2>Import from Sortly</h2><p class="sub">Choose your three Excel/CSV exports. File name decides category: "mineral", "fossil", otherwise artifact ("misc").</p><input type="file" id="imp" accept=".xlsx,.xls,.csv" multiple><progress id="ipr" value="0" max="1" style="width:100%"></progress><p id="ilog">Waiting for a file…</p></div>
+<div class="card"><h2>Import from Sortly</h2><p class="sub">Choose your three Excel/CSV exports. File name decides category: "mineral", "fossil", otherwise artifact ("misc").</p><input type="file" id="imp" accept=".xlsx,.xls,.csv" multiple><label><input type="checkbox" id="nop" checked style="width:auto"> Skip photo downloads (attach photos separately below)</label><progress id="ipr" value="0" max="1" style="width:100%"></progress><p id="ilog">Waiting for a file…</p></div>
+<div class="card"><h2>Attach photos from folder</h2><p class="sub">Select the photos made by the Mac helper script (named SID_1.jpg, SID_2.jpg…). They attach to the matching specimens.</p><input type="file" id="ap" accept="image/*" multiple><progress id="apr" value="0" max="1" style="width:100%"></progress><p id="alog"></p></div>
 <div class="card"><h2>Bulk tools</h2><label><input type="checkbox" id="ow" style="width:auto"> Overwrite existing Date values</label><button id="bd" style="margin:6px 0">Extract Date from tags</button>
 <label><input type="checkbox" id="rc" style="width:auto"> Replace colors (instead of merging)</label><button id="bc" style="margin:6px 0">Extract colors from tags</button><p id="blog"></p></div>
 <div class="card"><h2>Export / backup</h2><div class="row"><button class="p" id="ej">Backup JSON</button><button id="ec">Export CSV</button></div><label>Restore from backup<input type="file" id="rs" accept=".json"></label></div>`;
 $('#imp').onchange=async e=>{const log=$('#ilog');log.textContent='Reading file…';try{if(typeof XLSX==='undefined')await new Promise((ok,no)=>{const s=document.createElement('script');s.src='https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js';s.onload=ok;s.onerror=()=>no(new Error('Spreadsheet reader could not load. Check your connection and reopen the app.'));document.head.appendChild(s)});for(const f of e.target.files)await importFile(f)}catch(err){log.textContent='Import problem: '+err.message}};
+$('#ap').onchange=async e=>{const log=$('#alog'),fs=[...e.target.files].sort((a,b)=>a.name.localeCompare(b.name,undefined,{numeric:true}));let n=0,miss=0,i=0;$('#apr').max=fs.length;
+for(const f of fs){i++;$('#apr').value=i;log.textContent=`Photo ${i} of ${fs.length}…`;const m=f.name.match(/^(.+)_(\d+)\.[a-z]+$/i),x=m&&S.find(z=>z.sid===m[1]);if(!x){miss++;continue}
+if(x.photos.some(p=>p.src===f.name))continue;const u=await shrink(f);if(!u){miss++;continue}x.photos.push({data:u,role:m[2]==='1'?'front':'detail',src:f.name});await save(x);n++}
+log.textContent=`${n} photos attached, ${miss} skipped (no matching specimen or unreadable).`};
 $('#bd').onclick=bulkDate;$('#bc').onclick=bulkColor;$('#ej').onclick=()=>out('leilas-journal-backup.json',JSON.stringify({templates:T,specimens:S},null,1),'application/json');
 $('#ec').onclick=csv;$('#rs').onchange=async e=>{const j=JSON.parse(await e.target.files[0].text());for(const x of j.specimens)await save(x);alert('Restored '+j.specimens.length);home()}}
 async function out(name,text,type){const f=new File([text],name,{type});if(navigator.canShare&&navigator.canShare({files:[f]})){try{return await navigator.share({files:[f]})}catch(e){if(e.name==='AbortError')return}}
@@ -143,20 +148,26 @@ const pk=PLACE[x.cat];if(x.f[pk]&&x.f[pk].includes(','))x.f[pk]=x.f[pk].split(',
 $('#blog').textContent=`Colors extracted for ${n} specimens.`}
 // ---- Sortly import ----
 async function importFile(f){const log=$('#ilog'),nm=f.name.toLowerCase(),cat=nm.includes('mineral')?'mineral':nm.includes('fossil')?'fossil':'artifact';
-const wb=XLSX.read(await f.arrayBuffer());const rows=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{defval:''});
-const pick=(r,...ks)=>{for(const k of Object.keys(r))if(ks.some(z=>k.toLowerCase().replace(/[^a-z]/g,'')===z))return r[k];return ''};
-const photoKeys=rows[0]?Object.keys(rows[0]).filter(k=>/photo|image|picture/i.test(k)):[];let added=0,skip=0,ph=0,i=0;if(!rows.length){log.textContent=f.name+': no rows found.';return}
-for(const r of rows){i++;$('#ipr').max=rows.length;$('#ipr').value=i;log.textContent=`${f.name}: row ${i} of ${rows.length}…`;const name=String(pick(r,'name','itemname')).trim();if(!name)continue;
-const sid=String(pick(r,'sid')).trim();if(sid&&S.some(x=>x.sid===sid)){skip++;continue}
-const tags=String(pick(r,'tags')).split(/[,;]/).map(s=>s.trim()).filter(Boolean),folder=String(pick(r,'folder','folderpath','path')).trim();
-const x={id:uid(),added:Date.now(),name,cat,tags,notes:String(pick(r,'notes')),storage:'',folder,price:+pick(r,'price','unitprice')||'',pdate:String(pick(r,'purchasedate','date')),value:+pick(r,'value','totalvalue')||'',year:'',acquired:'',source:'',sid,photos:[],f:{},colors:[]};
+const wb=XLSX.read(await f.arrayBuffer());let best=[];for(const n of wb.SheetNames){const a=XLSX.utils.sheet_to_json(wb.Sheets[n],{header:1,defval:''});if(a.length>best.length)best=a}
+const hi=best.findIndex(r=>r.some(c=>/name/i.test(String(c))));
+if(hi<0){log.textContent=`${f.name}: no Name column found. Rows read: ${best.length}. First row: ${(best[0]||[]).join(' | ').slice(0,300)}`;return}
+const H=best[hi].map(c=>String(c).trim()),rows=best.slice(hi+1).map(a=>{const o={};H.forEach((h,i)=>{if(h)o[h]=a[i]});return o});
+const nameK=H.find(h=>/name/i.test(h)&&!/folder/i.test(h)),sidK=H.find(h=>/^(sid|sortly id|id)$/i.test(h))||H.find(h=>/sid|sortly/i.test(h)),typeK=H.find(h=>/type/i.test(h));
+const g=(r,re)=>{const k=H.find(h=>re.test(h));return k?r[k]:''};
+const photoKeys=H.filter(h=>/photo|image|picture/i.test(h)),folderKeys=H.filter(h=>/folder/i.test(h));
+let added=0,skip=0,ph=0,i=0,nonItem=0,noNet=0,blocked=0;
+for(const r of rows){i++;$('#ipr').max=rows.length;$('#ipr').value=i;log.textContent=`${f.name}: row ${i} of ${rows.length}…`;
+const name=String(r[nameK]??'').trim();if(!name||(typeK&&/folder/i.test(r[typeK]))){nonItem++;continue}
+const sid=sidK?String(r[sidK]).trim():'';if(sid&&S.some(x=>x.sid===sid)){skip++;continue}
+const tags=String(g(r,/^tags?$/i)).split(/[,;]/).map(s=>s.trim()).filter(Boolean),folder=folderKeys.map(k=>String(r[k]).trim()).filter(Boolean).join(' / ');
+const x={id:uid(),added:Date.now(),name,cat,tags,notes:String(g(r,/^notes?$/i)),storage:'',folder,price:+g(r,/price/i)||'',pdate:String(g(r,/purchase.*date|^date$/i)),value:+g(r,/^(total )?value/i)||'',year:'',acquired:'',source:'',sid,photos:[],f:{},colors:[]};
 x.f[MAIN[cat]]=name;x.year=yearOf(x);
-const hit=tags.map(colorOf).filter(Boolean);x.colors=[...new Set(hit)];x.tags=tags.filter(t=>!colorOf(t));
+x.colors=[...new Set(tags.map(colorOf).filter(Boolean))];x.tags=tags.filter(t=>!colorOf(t));
 if(x.tags.length)x.f[PLACE[cat]]=x.tags.join(', ');
-const urls=photoKeys.flatMap(k=>String(r[k]).split(/[\s,;|]+/)).filter(u=>/^https?:/.test(u));
-for(const u of urls){try{const u2=await shrink(await (await fetch(u)).blob());if(u2){x.photos.push({data:u2,role:x.photos.length?'detail':'front'});ph++}}catch(e){}}
+const urls=($('#nop')&&$('#nop').checked)?[]:photoKeys.flatMap(k=>String(r[k]).split(/[\s,;|]+/)).filter(u=>/^https?:/.test(u));
+for(const u of urls){if(noNet>=3){blocked++;continue}try{const u2=await shrink(await (await fetch(u,{signal:AbortSignal.timeout(8000)})).blob());if(u2){x.photos.push({data:u2,role:x.photos.length?'detail':'front'});ph++;noNet=0}}catch(e){noNet++;blocked++}}
 await save(x);added++}
-log.textContent=`${f.name}: ${added} added, ${skip} duplicates skipped, ${ph} photos downloaded.`}
+log.textContent=`${f.name}: ${rows.length} rows read, ${added} added, ${skip} duplicates skipped, ${nonItem} non-item rows ignored, ${ph} photos downloaded.`+(blocked?` The browser can't download Sortly photos directly (${blocked}+ blocked); use the photo helper script, then Attach photos below.`:'')+(added||skip?'':` Columns found: ${H.join(' | ')}`)}
 // ---- boot ----
 (async()=>{DB=await idb();await load();render();if('serviceWorker'in navigator)navigator.serviceWorker.register('sw.js')})();
 </script></body></html>
