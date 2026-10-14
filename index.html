@@ -2,7 +2,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes"><meta name="theme-color" content="#1b1510">
 <link rel="manifest" href="manifest.json"><link rel="apple-touch-icon" href="icon-192.png">
-<title>Leila's Journal</title>
+<title>Leila's Log</title>
 <style>
 :root{--bg:#1b1510;--st:#3a3025;--st2:#554733;--gold:#c9a24a;--tx:#efe3c8;--mu:#a8987a}
 *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--tx);font:16px Georgia,serif;padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom)}
@@ -17,15 +17,42 @@ button{background:var(--st2);cursor:pointer;width:auto}button.p{background:var(-
 label{display:block;margin-top:10px;color:var(--mu);font-size:14px}.chip{display:inline-block;width:auto;margin:3px;padding:6px 10px;border-radius:16px}.chip.on{background:var(--gold);color:#1b1510}
 nav{position:fixed;bottom:0;left:0;right:0;display:flex;background:#120e0a;padding-bottom:env(safe-area-inset-bottom);border-top:1px solid #6b5a45}nav button{flex:1;border:0;border-radius:0;background:none;padding:14px}nav .on{color:var(--gold)}
 .th{width:100%;height:150px;object-fit:cover;border-radius:6px}.gal img{height:140px;margin:3px;border-radius:6px}.kv{display:flex;justify-content:space-between;border-bottom:1px solid #3a3025;padding:6px 0}.kv span:first-child{color:var(--mu)}
-#tomb{position:fixed;inset:0;z-index:9;background:#0c0905;display:flex;align-items:center;justify-content:center;flex-direction:column;overflow:hidden}
-.door{position:absolute;top:0;bottom:0;width:50%;background:repeating-linear-gradient(0deg,#4a3d2e 0 38px,#2e251b 38px 40px);transition:transform 5s ease-in}
-.dl{left:0;border-right:3px solid #000}.dr{right:0;border-left:3px solid #000}.open .dl{transform:translateX(-100%)}.open .dr{transform:translateX(100%)}
-.glow{position:absolute;inset:0;background:radial-gradient(circle,#ffb84a 0,#6b3d10 40%,#0c0905 80%);opacity:0;transition:opacity 5s}.open .glow{opacity:1}
-.door::after{content:"";position:absolute;inset:0;background:linear-gradient(80deg,transparent 40%,#000 41% 42%,transparent 43%);opacity:0;transition:opacity 3s}.open .door::after{opacity:1}
-#tt{position:relative;z-index:2;text-align:center;text-shadow:0 2px 8px #000}
+#tomb{position:fixed;inset:0;z-index:9;background:#050302;overflow:hidden}
+.glow{position:absolute;inset:0;background:radial-gradient(ellipse at 50% 55%,#ffe0a0 0,#d08f38 16%,#6b3d10 44%,#0c0905 82%);opacity:0;transition:opacity 4.5s ease-in 1.4s}
+.door{position:absolute;top:0;bottom:0;width:50.5%;overflow:hidden;will-change:transform;transition:transform 5s cubic-bezier(.55,0,.3,1) 1.8s}
+.dl{left:0}.dr{right:0}.st{position:absolute;inset:0;width:100%;height:100%}
+.door::before{content:"";position:absolute;inset:0;z-index:1;mix-blend-mode:multiply;background:repeating-linear-gradient(0deg,transparent 0 118px,rgba(0,0,0,.6) 118px 121px,rgba(255,230,190,.15) 121px 123px),rgba(92,66,38,.6)}
+.door::after{content:"";position:absolute;top:0;bottom:0;width:34px;z-index:3}
+.dl::after{right:0;background:linear-gradient(90deg,transparent,rgba(0,0,0,.8))}.dr::after{left:0;background:linear-gradient(270deg,transparent,rgba(0,0,0,.8))}
+.cr{position:absolute;inset:0;width:100%;height:100%;z-index:2}
+.cr path{fill:none;stroke:#000;stroke-width:2.2;stroke-linecap:round;vector-effect:non-scaling-stroke;stroke-dasharray:1;stroke-dashoffset:1;filter:drop-shadow(0 0 1px rgba(255,205,130,.7))}
+.open .cr path{stroke-dashoffset:0;transition:stroke-dashoffset 2.4s ease-out}.open .cr path:nth-child(2){transition-delay:.4s}.open .cr path:nth-child(3){transition-delay:.8s}.open .cr path:nth-child(4){transition-delay:1.1s}
+.open .dl{transform:translateX(-101%)}.open .dr{transform:translateX(101%)}.open .glow{opacity:1}
+.open .door{animation:rum 1.8s linear}@keyframes rum{0%,100%{translate:0 0}12%{translate:-2px 1px}25%{translate:2px -1px}40%{translate:-3px 0}55%{translate:2px 1px}70%{translate:-2px -1px}85%{translate:1px 0}}
+.gl{position:absolute;top:0;bottom:0;z-index:2;display:flex;flex-direction:column;justify-content:space-between;padding:calc(env(safe-area-inset-top) + 40px) 0 110px}.gl div{display:flex;flex-direction:column;gap:20px}
+.dl .gl{right:24px}.dr .gl{left:24px}
+.g{width:32px;height:32px;stroke:#0e0905;stroke-width:2.4;fill:none;stroke-linecap:round;stroke-linejoin:round;filter:drop-shadow(1px 1px 0 rgba(255,235,200,.3))}
+#tt{position:absolute;left:0;right:0;top:46%;transform:translateY(-50%);z-index:5;text-align:center;text-shadow:0 2px 8px #000}
+#tr{position:absolute;left:0;right:0;bottom:calc(env(safe-area-inset-bottom) + 56px);z-index:5;margin:0;text-align:center;color:var(--tx);font-style:italic;font-size:14px;text-shadow:0 2px 6px #000;padding:0 20px}
+.open #tr{opacity:0;transition:opacity 1s}.open #tt{opacity:0;transition:opacity 1.5s 5s}
+#mu{position:fixed;z-index:20;top:calc(env(safe-area-inset-top) + 8px);right:10px;width:44px;height:44px;padding:0;border-radius:50%;background:rgba(18,14,10,.75);border:1px solid var(--gold);font-size:20px;line-height:1}
 </style></head><body>
-<div id="tomb"><div class="glow"></div><div class="door dl"></div><div class="door dr"></div>
-<div id="tt"><h1 style="font-size:34px">Leila's Journal</h1><p id="ts" class="sub">Tap to enter the tomb</p></div></div>
+<div id="tomb"><div class="glow"></div>
+<div class="door dl"><svg class="st"><filter id="rk1" x="0" y="0" width="100%" height="100%"><feTurbulence type="fractalNoise" baseFrequency=".012 .04" numOctaves="5" seed="3"/><feDiffuseLighting lighting-color="#e2cfae" surfaceScale="3.5"><feDistantLight azimuth="235" elevation="52"/></feDiffuseLighting></filter><rect width="100%" height="100%" filter="url(#rk1)"/></svg><svg class="cr" viewBox="0 0 200 800" preserveAspectRatio="none"><path pathLength="1" d="M180 0L150 90 170 170 120 260 140 340 90 440 110 520 60 640 80 800"/><path pathLength="1" d="M200 120L160 170 130 150 80 210"/><path pathLength="1" d="M110 440L150 470 140 540 190 600"/><path pathLength="1" d="M120 260L70 290 40 350 60 400"/></svg><div class="gl" id="gl1"></div></div>
+<div class="door dr"><svg class="st"><filter id="rk2" x="0" y="0" width="100%" height="100%"><feTurbulence type="fractalNoise" baseFrequency=".012 .04" numOctaves="5" seed="11"/><feDiffuseLighting lighting-color="#e2cfae" surfaceScale="3.5"><feDistantLight azimuth="235" elevation="52"/></feDiffuseLighting></filter><rect width="100%" height="100%" filter="url(#rk2)"/></svg><svg class="cr" viewBox="0 0 200 800" preserveAspectRatio="none"><path pathLength="1" d="M20 0L50 100 30 190 80 280 60 380 110 470 90 560 140 660 120 800"/><path pathLength="1" d="M0 260L40 300 70 280 120 340"/><path pathLength="1" d="M90 470L50 500 60 580 20 640"/><path pathLength="1" d="M60 380L120 400 150 450 170 520"/></svg><div class="gl" id="gl2"></div></div>
+<div id="tt"><h1 style="font-size:34px">Leila's Log</h1><p id="ts" class="sub">Tap to enter the tomb</p></div>
+<p id="tr">&ldquo;Walk far, look well &mdash; every horizon is a page.&rdquo;</p></div>
+<button id="mu" aria-label="Mute or unmute music">&#128266;</button>
+<svg width="0" height="0" style="position:absolute"><defs>
+<symbol id="ankh" viewBox="0 0 40 40"><ellipse cx="20" cy="10" rx="6" ry="8"/><path d="M20 18v20M10 25h20"/></symbol>
+<symbol id="eye" viewBox="0 0 40 40"><path d="M3 18Q20 4 37 18Q20 30 3 18Z"/><circle cx="20" cy="18" r="4"/><path d="M20 28v8q-5 2-8 0"/></symbol>
+<symbol id="sun" viewBox="0 0 40 40"><circle cx="20" cy="20" r="11"/><circle cx="20" cy="20" r="2"/></symbol>
+<symbol id="water" viewBox="0 0 40 40"><path d="M3 12l6-5 6 5 6-5 6 5 6-5M3 22l6-5 6 5 6-5 6 5 6-5M3 32l6-5 6 5 6-5 6 5 6-5"/></symbol>
+<symbol id="legs" viewBox="0 0 40 40"><path d="M12 6v22h20M12 28v6"/></symbol>
+<symbol id="boat" viewBox="0 0 40 40"><path d="M3 26Q20 38 37 26M11 26V12M29 26V12M11 12h18"/></symbol>
+<symbol id="bird" viewBox="0 0 40 40"><path d="M5 28Q12 8 22 20Q30 12 36 20Q28 24 22 32ZM14 28l-4 8"/></symbol>
+<symbol id="reed" viewBox="0 0 40 40"><path d="M20 37V9M20 9q-9 2-9 11M20 9q9 2 9 11"/></symbol>
+</defs></svg>
 <div id="app"></div>
 <nav><button data-v="home" class="on">Expedition</button><button data-v="archive">Archive</button><button data-v="camp">Camp</button></nav>
 <audio id="aud" src="music.mp3" loop></audio>
@@ -52,14 +79,19 @@ const disp=x=>x.value||x.price||'';const money=n=>n?new Intl.NumberFormat('en-US
 // ---- image helper ----
 const shrink=blob=>new Promise(r=>{const i=new Image(),u=URL.createObjectURL(blob);i.onload=()=>{const k=Math.min(1,800/Math.max(i.width,i.height)),c=document.createElement('canvas');c.width=i.width*k;c.height=i.height*k;c.getContext('2d').drawImage(i,0,0,c.width,c.height);URL.revokeObjectURL(u);r(c.toDataURL('image/jpeg',.6))};i.onerror=()=>r(null);i.src=u});
 // ---- tomb ----
-$('#tomb').onclick=function once(){if(seen)return;seen=true;$('#ts').textContent='Ancient seals breaking…';$('#aud').play().catch(()=>{});$('#tomb').classList.add('open');setTimeout(()=>$('#tomb').style.display='none',5600)};
+const AU=$('#aud'),mu=$('#mu');let muted=false;try{muted=localStorage.getItem('lj-mute')==='1'}catch(e){}
+const paint=()=>{mu.innerHTML=muted?'&#128263;':'&#128266;';AU.muted=muted;mu.setAttribute('aria-pressed',muted)};paint();
+mu.onclick=e=>{e.stopPropagation();muted=!muted;try{localStorage.setItem('lj-mute',muted?'1':'0')}catch(x){}paint();if(!muted&&view==='home')AU.play().catch(()=>{})};
+const gly=a=>a.map(g=>`<div>${g.map(n=>`<svg class="g"><use href="#${n}"/></svg>`).join('')}</div>`).join('');
+$('#gl1').innerHTML=gly([['legs','boat','water'],['eye','bird','reed']]);$('#gl2').innerHTML=gly([['sun','ankh','legs'],['water','eye','boat']]);
+$('#tomb').onclick=function once(){if(seen)return;seen=true;$('#ts').textContent='Ancient seals breaking…';AU.play().catch(()=>{});$('#tomb').classList.add('open');setTimeout(()=>$('#tomb').style.display='none',7200)};
 // ---- nav ----
 document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>go(b.dataset.v));
 function go(v,o){view=v;if(o)Object.assign(q,o);document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('on',b.dataset.v===v));v==='home'?$('#aud').play().catch(()=>{}):$('#aud').pause();render();scrollTo(0,0)}
 function render(){({home,archive,camp,detail,form})[view]()}
 // ---- home ----
 function home(){const tot=S.reduce((a,x)=>a+(+disp(x)||0),0);
-$('#app').innerHTML=`<h1>Leila's Journal</h1><p class="sub">logging specimens as a renowned explorer of earth, bone, and ancient craft</p>
+$('#app').innerHTML=`<h1>Leila's Log</h1><p class="sub">logging specimens as a renowned explorer of earth, bone, and ancient craft</p>
 <div class="row"><div class="card"><b>${S.length}</b><br>specimens catalogued</div><div class="card"><b>${money(tot)||'$0'}</b><br>expedition value</div></div>
 <h2>Choose your chamber</h2><div class="row">${Object.entries(CATS).map(([k,v])=>`<div class="tile" data-c="${k}">${v}<b>${S.filter(x=>x.cat===k).length}</b></div>`).join('')}</div>
 <h2>Recent discoveries</h2>${[...S].sort((a,b)=>b.added-a.added).slice(0,5).map(x=>`<div class="card" data-id="${x.id}">${esc(x.name)} <span class="sub">· ${CATS[x.cat]}</span></div>`).join('')}
