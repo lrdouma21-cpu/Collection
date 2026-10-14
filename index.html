@@ -119,20 +119,28 @@ $('#cn').onclick=()=>cur?show(cur.id):go('archive');
 $('#sv').onclick=async()=>{d.tags=$('#tags').value.split(',').map(s=>s.trim()).filter(Boolean);
 const miss=[!d.name&&'Name',...T[d.cat].filter(t=>t[2]&&!d.f[t[0]]).map(t=>t[1])].filter(Boolean);if(miss.length)return alert('Required: '+miss.join(', '));
 await save(d);show(d.id)}}
+// ---- first-app JSON converter ----
+const conv=x=>{const f={},fv=x.fieldValues||{};let colors=[];for(const k in fv){if(k==='colors')colors=fv[k]||[];else f[k==='objectType'?'type':k]=fv[k]}
+return {id:uid(),added:Date.parse(x.createdAt)||Date.now(),name:x.name,cat:x.category,tags:x.tags||[],notes:x.notes||'',storage:x.storageLocation||'',folder:'',price:x.purchasePrice||'',pdate:x.purchaseDate||'',value:x.currentValue||'',year:x.dateYear||'',acquired:({purchased:'Purchased',found:'Found',unknown:'Unknown'})[x.acquisitionMethod]||'',source:x.acquisitionSource||'',sid:x.sortlySid||'',photos:[],pending:[...(x.photos||[])].sort((a,b)=>a.sortOrder-b.sortOrder).map(p=>({path:p.relativePath,role:p.role})),f,colors}};
 // ---- camp ----
 function camp(){$('#app').innerHTML=`<h1>Camp</h1>
 <div class="card"><h2>Import from Sortly</h2><p class="sub">Choose your three Excel/CSV exports. File name decides category: "mineral", "fossil", otherwise artifact ("misc").</p><input type="file" id="imp" accept=".xlsx,.xls,.csv" multiple><label><input type="checkbox" id="nop" checked style="width:auto"> Skip photo downloads (attach photos separately below)</label><progress id="ipr" value="0" max="1" style="width:100%"></progress><p id="ilog">Waiting for a file…</p></div>
 <div class="card"><h2>Attach photos from folder</h2><p class="sub">Select the photos made by the Mac helper script (named SID_1.jpg, SID_2.jpg…). They attach to the matching specimens.</p><input type="file" id="ap" accept="image/*" multiple><progress id="apr" value="0" max="1" style="width:100%"></progress><p id="alog"></p></div>
 <div class="card"><h2>Bulk tools</h2><label><input type="checkbox" id="ow" style="width:auto"> Overwrite existing Date values</label><button id="bd" style="margin:6px 0">Extract Date from tags</button>
 <label><input type="checkbox" id="rc" style="width:auto"> Replace colors (instead of merging)</label><button id="bc" style="margin:6px 0">Extract colors from tags</button><p id="blog"></p></div>
-<div class="card"><h2>Export / backup</h2><div class="row"><button class="p" id="ej">Backup JSON</button><button id="ec">Export CSV</button></div><label>Restore from backup<input type="file" id="rs" accept=".json"></label></div>`;
+<div class="card"><h2>Photo packs (from first app)</h2><p class="sub">Select the photopack-*.json files. Photos attach to the specimens loaded from the first app's JSON.</p><input type="file" id="pk" accept=".json" multiple><p id="plog"></p></div>
+<div class="card"><h2>Export / backup</h2><p class="sub" id="stat"></p><div class="row"><button class="p" id="ej">Backup JSON</button><button id="ec">Export CSV</button></div><label>Restore from backup<input type="file" id="rs" accept=".json"></label></div>`;
 $('#imp').onchange=async e=>{const log=$('#ilog');log.textContent='Reading file…';try{if(typeof XLSX==='undefined')await new Promise((ok,no)=>{const s=document.createElement('script');s.src='https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js';s.onload=ok;s.onerror=()=>no(new Error('Spreadsheet reader could not load. Check your connection and reopen the app.'));document.head.appendChild(s)});for(const f of e.target.files)await importFile(f)}catch(err){log.textContent='Import problem: '+err.message}};
 $('#ap').onchange=async e=>{const log=$('#alog'),fs=[...e.target.files].sort((a,b)=>a.name.localeCompare(b.name,undefined,{numeric:true}));let n=0,miss=0,i=0;$('#apr').max=fs.length;
 for(const f of fs){i++;$('#apr').value=i;log.textContent=`Photo ${i} of ${fs.length}…`;const m=f.name.match(/^(.+)_(\d+)\.[a-z]+$/i),x=m&&S.find(z=>z.sid===m[1]);if(!x){miss++;continue}
 if(x.photos.some(p=>p.src===f.name))continue;const u=await shrink(f);if(!u){miss++;continue}x.photos.push({data:u,role:m[2]==='1'?'front':'detail',src:f.name});await save(x);n++}
 log.textContent=`${n} photos attached, ${miss} skipped (no matching specimen or unreadable).`};
 $('#bd').onclick=bulkDate;$('#bc').onclick=bulkColor;$('#ej').onclick=()=>out('leilas-journal-backup.json',JSON.stringify({templates:T,specimens:S},null,1),'application/json');
-$('#ec').onclick=csv;$('#rs').onchange=async e=>{const j=JSON.parse(await e.target.files[0].text());for(const x of j.specimens)await save(x);alert('Restored '+j.specimens.length);home()}}
+$('#ec').onclick=csv;$('#stat').textContent=`Saved on this device: ${S.length} specimens, ${S.reduce((a,x)=>a+x.photos.length,0)} photos, ${S.reduce((a,x)=>a+(x.pending||[]).length,0)} photos waiting.`;
+$('#rs').onchange=async e=>{const j=JSON.parse(await e.target.files[0].text());let n=0;for(const y of j.specimens){const x=y.templateId?conv(y):y;if(x.sid&&S.some(z=>z.sid===x.sid&&z.id!==x.id))continue;await save(x);n++}alert(`Loaded ${n} specimens`);home()};
+$('#pk').onchange=async e=>{const log=$('#plog');let n=0;const idx=new Map();S.forEach(x=>(x.pending||[]).forEach(p=>idx.set(p.path,{x,p})));
+try{for(const f of e.target.files){const j=JSON.parse(await f.text());for(const [path,data] of Object.entries(j.photos||{})){const h=idx.get(path);if(!h||!data)continue;h.x.photos.push({data,role:h.p.role});h.x.pending=h.x.pending.filter(p=>p.path!==path);idx.delete(path);await save(h.x);n++;log.textContent=`${n} photos attached…`}}
+log.textContent=`${n} photos attached. ${idx.size} still waiting for a photo pack.`}catch(err){log.textContent='Problem: '+err.message}};}
 async function out(name,text,type){const f=new File([text],name,{type});if(navigator.canShare&&navigator.canShare({files:[f]})){try{return await navigator.share({files:[f]})}catch(e){if(e.name==='AbortError')return}}
 const a=document.createElement('a');a.href=URL.createObjectURL(f);a.download=name;a.click()}
 function csv(){const rows=[['name','category','tags','notes','storage','folder','price','purchase_date','value','year','acquired','source','sid','colors','fields','photo_count']];
@@ -169,5 +177,5 @@ for(const u of urls){if(noNet>=3){blocked++;continue}try{const u2=await shrink(a
 await save(x);added++}
 log.textContent=`${f.name}: ${rows.length} rows read, ${added} added, ${skip} duplicates skipped, ${nonItem} non-item rows ignored, ${ph} photos downloaded.`+(blocked?` The browser can't download Sortly photos directly (${blocked}+ blocked); use the photo helper script, then Attach photos below.`:'')+(added||skip?'':` Columns found: ${H.join(' | ')}`)}
 // ---- boot ----
-(async()=>{DB=await idb();await load();render();if('serviceWorker'in navigator)navigator.serviceWorker.register('sw.js')})();
+(async()=>{DB=await idb();await load();try{navigator.storage&&navigator.storage.persist&&await navigator.storage.persist()}catch(e){}render();if('serviceWorker'in navigator)navigator.serviceWorker.register('sw.js')})();
 </script></body></html>
